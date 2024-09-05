@@ -7,7 +7,6 @@ import (
 	"github.com/NikolosHGW/goph-keeper/internal/infrastructure/config"
 	"github.com/NikolosHGW/goph-keeper/internal/infrastructure/db"
 	"github.com/NikolosHGW/goph-keeper/pkg/logger"
-	"go.uber.org/zap"
 )
 
 func main() {
@@ -31,7 +30,7 @@ func run() error {
 
 	defer func() {
 		if closeErr := database.Close(); closeErr != nil {
-			myLogger.Fatal("ошибка при закрытии базы данных: ", zap.Error(err))
+			myLogger.LogInfo("ошибка при закрытии базы данных: ", err)
 		}
 	}()
 
