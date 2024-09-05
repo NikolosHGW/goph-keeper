@@ -7,8 +7,8 @@ import (
 	"net/http"
 
 	"github.com/NikolosHGW/goph-keeper/internal/entity"
+	"github.com/NikolosHGW/goph-keeper/internal/helper"
 	"github.com/NikolosHGW/goph-keeper/internal/request"
-	"github.com/NikolosHGW/goph-keeper/pkg/logger"
 )
 
 const (
@@ -16,37 +16,30 @@ const (
 	ApplicationJSON = "application/json"
 )
 
-var (
-	ErrLoginAlreadyExists = errors.New("логин уже существует")
-	ErrInvalidCredentials = errors.New("неверная пара логин/пароль")
-)
-
 type register interface {
-	Register(context.Context, string, string) (*entity.User, error)
+	Register(context.Context, *request.RegisterUser) (*entity.User, error)
 }
 
 type UserHandler struct {
 	registerUseCase register
-	logger          logger.CustomLogger
 }
 
-func NewUserHandler(registerUseCase register, logger logger.CustomLogger) *UserHandler {
+func NewUserHandler(registerUseCase register) *UserHandler {
 	return &UserHandler{
 		registerUseCase: registerUseCase,
-		logger:          logger,
 	}
 }
 
 func (h *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
-	inputData, err := request.NewRegisterUser(r)
+	registerDTO, err := request.NewRegisterUser(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	user, err := h.registerUseCase.Register(r.Context(), inputData.Login, inputData.Password)
+	user, err := h.registerUseCase.Register(r.Context(), registerDTO)
 	if err != nil {
-		if errors.Is(err, ErrLoginAlreadyExists) {
+		if errors.Is(err, helper.ErrLoginAlreadyExists) {
 			http.Error(w, err.Error(), http.StatusConflict)
 			return
 		}

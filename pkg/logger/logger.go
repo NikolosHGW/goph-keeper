@@ -28,13 +28,18 @@ func NewLogger(level string) (*logger, error) {
 	return &logger{logger: zl}, nil
 }
 
-// LogInfo вызов лога уровня Info.
+// LogInfo вызов лога ошибок уровня Info.
 func (l *logger) LogInfo(massage string, err error) {
 	l.logger.Info(massage, zap.Error(err))
 }
 
 // CustomLogger интерфейс, который должен использоваться
-// в других пакетах, где нужно логирование.
+// в других пакетах, где нужно логирование ошибок.
 type CustomLogger interface {
 	LogInfo(massage string, err error)
+}
+
+// LogInfo вызов лога ошибок уровня Info.
+func (l *logger) LogStringInfo(massage string, key, val string) {
+	l.logger.Info(massage, zap.String(key, val))
 }
