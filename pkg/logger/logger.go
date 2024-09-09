@@ -39,7 +39,7 @@ type CustomLogger interface {
 	LogInfo(massage string, err error)
 }
 
-// LogInfo вызов лога ошибок уровня Info.
+// LogStringInfo вызов лога key-value уровня Info.
 func (l *logger) LogStringInfo(massage string, key, val string) {
 	l.logger.Info(massage, zap.String(key, val))
 }

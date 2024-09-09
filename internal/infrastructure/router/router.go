@@ -12,7 +12,7 @@ func NewRouter(handlers *handler.Handlers) *chi.Mux {
 	// r.Use(middlewares.Gzip.WithGzip)
 
 	r.Route("/api/user", func(r chi.Router) {
-		r.Post("/register", handlers.UserHandler.RegisterUser)
+		r.Post("/register", handlers.AuthHandler.RegisterUser)
 		// r.Post("/login", handlers.UserHandler.LoginUser)
 
 		// r.With(middlewares.Auth.WithAuth).Post("/orders", handlers.OrderHandler.UploadOrder)

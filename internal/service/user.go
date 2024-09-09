@@ -1,12 +1,18 @@
 package service
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/NikolosHGW/goph-keeper/internal/entity"
 	"github.com/NikolosHGW/goph-keeper/internal/helper"
 	"github.com/NikolosHGW/goph-keeper/internal/request"
 	"github.com/NikolosHGW/goph-keeper/pkg/logger"
+	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
 )
+
+const TokenExp = time.Hour * 5
 
 type User struct {
 	logger logger.CustomLogger
@@ -32,4 +38,26 @@ func (u *User) GetUser(registerDTO *request.RegisterUser) (*entity.User, error) 
 	}
 
 	return user, nil
+}
+
+// GenerateJWT - генерирует токен.
+func (u *User) GenerateJWT(user *entity.User, secretKey string) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, entity.Claims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TokenExp)),
+		},
+		UserID: user.ID,
+	})
+
+	if secretKey == "" {
+		u.logger.LogInfo("для создании подписи токена секретный ключ пустой", fmt.Errorf("пустой secretKey"))
+		return "", fmt.Errorf("ошибки при создании токена")
+	}
+	tokenString, err := token.SignedString([]byte(secretKey))
+	if err != nil {
+		u.logger.LogInfo("ошибки при создании подписи токена: ", err)
+		return "", fmt.Errorf("ошибки при создании подписи токена")
+	}
+
+	return tokenString, nil
 }

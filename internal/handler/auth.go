@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/NikolosHGW/goph-keeper/internal/entity"
@@ -21,19 +20,26 @@ type register interface {
 	Register(context.Context, *request.RegisterUser) (*entity.User, error)
 }
 
-type UserHandler struct {
-	registerUseCase register
-	logger          logger.CustomLogger
+type userServicer interface {
+	GenerateJWT(*entity.User, string) (string, error)
 }
 
-func NewUserHandler(registerUseCase register, logger logger.CustomLogger) *UserHandler {
-	return &UserHandler{
+type AuthHandler struct {
+	registerUseCase register
+	userService     userServicer
+	logger          logger.CustomLogger
+	secretKey       string
+}
+
+func NewAuthHandler(registerUseCase register, logger logger.CustomLogger, secretKey string) *AuthHandler {
+	return &AuthHandler{
 		registerUseCase: registerUseCase,
 		logger:          logger,
+		secretKey:       secretKey,
 	}
 }
 
-func (h *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	registerDTO, err := request.NewRegisterUser(r, h.logger)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -53,14 +59,12 @@ func (h *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	sendToken(w, h, user)
 }
 
-func sendToken(w http.ResponseWriter, h *UserHandler, user *entity.User) {
-	// token, err := h.userUseCase.GenerateJWT(user)
-	// if err != nil {
-	// 	http.Error(w, "Ошибка при создании токена", http.StatusInternalServerError)
-	// 	return
-	// }
-	fmt.Println(h, user)
-	token := ""
+func sendToken(w http.ResponseWriter, h *AuthHandler, user *entity.User) {
+	token, err := h.userService.GenerateJWT(user, h.secretKey)
+	if err != nil {
+		http.Error(w, "Ошибка при создании токена", http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Authorization", "Bearer "+token)
 	w.Header().Set(ContentType, ApplicationJSON)
 	w.WriteHeader(http.StatusOK)
