@@ -9,6 +9,7 @@ import (
 	"github.com/NikolosHGW/goph-keeper/internal/entity"
 	"github.com/NikolosHGW/goph-keeper/internal/helper"
 	"github.com/NikolosHGW/goph-keeper/internal/request"
+	"github.com/NikolosHGW/goph-keeper/pkg/logger"
 )
 
 const (
@@ -22,16 +23,18 @@ type register interface {
 
 type UserHandler struct {
 	registerUseCase register
+	logger          logger.CustomLogger
 }
 
-func NewUserHandler(registerUseCase register) *UserHandler {
+func NewUserHandler(registerUseCase register, logger logger.CustomLogger) *UserHandler {
 	return &UserHandler{
 		registerUseCase: registerUseCase,
+		logger:          logger,
 	}
 }
 
 func (h *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
-	registerDTO, err := request.NewRegisterUser(r)
+	registerDTO, err := request.NewRegisterUser(r, h.logger)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

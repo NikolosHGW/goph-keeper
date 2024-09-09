@@ -1,9 +1,8 @@
 package service
 
 import (
-	"errors"
-
 	"github.com/NikolosHGW/goph-keeper/internal/entity"
+	"github.com/NikolosHGW/goph-keeper/internal/helper"
 	"github.com/NikolosHGW/goph-keeper/internal/request"
 	"github.com/NikolosHGW/goph-keeper/pkg/logger"
 	"golang.org/x/crypto/bcrypt"
@@ -19,11 +18,12 @@ func NewUser(logger logger.CustomLogger) *User {
 	}
 }
 
+// GetUser - отдаёт сущность пользователя с захешированным паролем.
 func (u *User) GetUser(registerDTO *request.RegisterUser) (*entity.User, error) {
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(registerDTO.Password), bcrypt.DefaultCost)
 	if err != nil {
 		u.logger.LogInfo("ошибка при хэшировании пароля: ", err)
-		return nil, errors.New("временная ошибка сервиса, попробуйте ещё раз позже")
+		return nil, helper.ErrInternalServer
 	}
 
 	user := &entity.User{

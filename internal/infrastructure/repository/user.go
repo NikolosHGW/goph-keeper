@@ -2,9 +2,9 @@ package repository
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/NikolosHGW/goph-keeper/internal/entity"
+	"github.com/NikolosHGW/goph-keeper/internal/helper"
 	"github.com/NikolosHGW/goph-keeper/pkg/logger"
 	"github.com/jmoiron/sqlx"
 )
@@ -22,7 +22,8 @@ func (r *User) Save(ctx context.Context, user *entity.User) error {
 	query := `INSERT INTO users (login, password) VALUES ($1, $2) RETURNING id`
 	err := r.db.QueryRowxContext(ctx, query, user.Login, user.Password).Scan(&user.ID)
 	if err != nil {
-		return fmt.Errorf("ошибка при сохранении пользователя: %w", err)
+		r.logger.LogInfo("ошибка при сохранении пользователя", err)
+		return helper.ErrInternalServer
 	}
 
 	return nil
@@ -34,7 +35,7 @@ func (r *User) ExistsByLogin(ctx context.Context, login string) (bool, error) {
 	err := r.db.QueryRowxContext(ctx, query, login).Scan(&exists)
 	if err != nil {
 		r.logger.LogInfo("не получилось записать результат запроса в переменную", err)
-		return false, fmt.Errorf("временная ошибка сервиса, попробуйте ещё раз позже")
+		return false, helper.ErrInternalServer
 	}
 	return exists, nil
 }
