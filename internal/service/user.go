@@ -51,12 +51,12 @@ func (u *User) GenerateJWT(user *entity.User, secretKey string) (string, error) 
 
 	if secretKey == "" {
 		u.logger.LogInfo("для создании подписи токена секретный ключ пустой", fmt.Errorf("пустой secretKey"))
-		return "", fmt.Errorf("ошибки при создании токена")
+		return "", helper.ErrInternalServer
 	}
 	tokenString, err := token.SignedString([]byte(secretKey))
 	if err != nil {
 		u.logger.LogInfo("ошибки при создании подписи токена: ", err)
-		return "", fmt.Errorf("ошибки при создании подписи токена")
+		return "", helper.ErrInternalServer
 	}
 
 	return tokenString, nil

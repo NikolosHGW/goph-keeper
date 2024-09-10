@@ -62,7 +62,7 @@ func (h *AuthHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 func sendToken(w http.ResponseWriter, h *AuthHandler, user *entity.User) {
 	token, err := h.userService.GenerateJWT(user, h.secretKey)
 	if err != nil {
-		http.Error(w, "Ошибка при создании токена", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Authorization", "Bearer "+token)
