@@ -47,7 +47,7 @@ func run() error {
 	registerUsecase := usecase.NewRegisterUser(userService, userRepo)
 
 	handlers := &handler.Handlers{
-		AuthHandler: handler.NewAuthHandler(registerUsecase, myLogger, config.GetSecretKey()),
+		AuthHandler: handler.NewAuthHandler(registerUsecase, userService, myLogger, config.GetSecretKey()),
 	}
 
 	r := router.NewRouter(handlers)

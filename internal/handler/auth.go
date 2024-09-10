@@ -31,9 +31,15 @@ type AuthHandler struct {
 	secretKey       string
 }
 
-func NewAuthHandler(registerUseCase register, logger logger.CustomLogger, secretKey string) *AuthHandler {
+func NewAuthHandler(
+	registerUseCase register,
+	userService userServicer,
+	logger logger.CustomLogger,
+	secretKey string,
+) *AuthHandler {
 	return &AuthHandler{
 		registerUseCase: registerUseCase,
+		userService:     userService,
 		logger:          logger,
 		secretKey:       secretKey,
 	}
