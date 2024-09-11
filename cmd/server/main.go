@@ -29,7 +29,7 @@ func run() error {
 		return fmt.Errorf("не удалось инициализировать логгер: %w", err)
 	}
 
-	database, err := db.InitDB(config.GetDatabaseURI())
+	database, err := db.InitDB(config.GetDatabaseURI(), &db.DBConnector{}, &db.Migrator{})
 	if err != nil {
 		return fmt.Errorf("не удалось инициализировать базу данных: %w", err)
 	}
