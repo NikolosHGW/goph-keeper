@@ -3,6 +3,7 @@ module github.com/NikolosHGW/goph-keeper
 go 1.23.0
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/caarlos0/env v3.5.0+incompatible
 	github.com/go-chi/chi v1.5.5
 	github.com/golang-jwt/jwt/v4 v4.4.2

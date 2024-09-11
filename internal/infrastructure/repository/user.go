@@ -9,12 +9,16 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+type storager interface {
+	QueryRowxContext(context.Context, string, ...interface{}) *sqlx.Row
+}
+
 type User struct {
-	db     *sqlx.DB
+	db     storager
 	logger logger.CustomLogger
 }
 
-func NewUser(db *sqlx.DB, logger logger.CustomLogger) *User {
+func NewUser(db storager, logger logger.CustomLogger) *User {
 	return &User{db: db, logger: logger}
 }
 
