@@ -1,12 +1,16 @@
 package router
 
 import (
+	"net/http"
+
 	"github.com/NikolosHGW/goph-keeper/internal/handler"
 	"github.com/go-chi/chi"
 )
 
 func NewRouter(handlers *handler.Handlers) *chi.Mux {
 	r := chi.NewRouter()
+
+	r.Get("/", getHelloFunc())
 
 	// r.Use(middlewares.Logger.WithLogging)
 	// r.Use(middlewares.Gzip.WithGzip)
@@ -23,4 +27,13 @@ func NewRouter(handlers *handler.Handlers) *chi.Mux {
 	})
 
 	return r
+}
+
+func getHelloFunc() func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		_, err := w.Write([]byte("Hello"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	}
 }
