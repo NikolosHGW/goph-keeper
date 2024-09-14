@@ -20,32 +20,25 @@ type register interface {
 	Register(context.Context, *request.RegisterUser) (*entity.User, error)
 }
 
-type userServicer interface {
-	GenerateJWT(*entity.User, string) (string, error)
-}
-
-type AuthHandler struct {
+type RegisterHandler struct {
 	registerUseCase register
-	userService     userServicer
 	logger          logger.CustomLogger
 	secretKey       string
 }
 
-func NewAuthHandler(
+func NewRegisterHandler(
 	registerUseCase register,
-	userService userServicer,
 	logger logger.CustomLogger,
 	secretKey string,
-) *AuthHandler {
-	return &AuthHandler{
+) *RegisterHandler {
+	return &RegisterHandler{
 		registerUseCase: registerUseCase,
-		userService:     userService,
 		logger:          logger,
 		secretKey:       secretKey,
 	}
 }
 
-func (h *AuthHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
+func (h *RegisterHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	registerDTO, err := request.NewRegisterUser(r, h.logger)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -62,16 +55,5 @@ func (h *AuthHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sendToken(w, h, user)
-}
-
-func sendToken(w http.ResponseWriter, h *AuthHandler, user *entity.User) {
-	token, err := h.userService.GenerateJWT(user, h.secretKey)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Authorization", "Bearer "+token)
-	w.Header().Set(ContentType, ApplicationJSON)
-	w.WriteHeader(http.StatusOK)
+	sendToken(w, h.secretKey, h.logger, user)
 }

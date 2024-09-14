@@ -25,7 +25,7 @@ func TestNewRouter_RegisterRoute(t *testing.T) {
 	mockAuthHandler.On("RegisterUser", mock.Anything, mock.Anything).Return()
 
 	handlers := &handler.Handlers{
-		AuthHandler: mockAuthHandler,
+		RegisterHandler: mockAuthHandler,
 	}
 
 	r := NewRouter(handlers)
@@ -45,7 +45,7 @@ func TestNewRouter_UnknownRoute(t *testing.T) {
 	mockAuthHandler.On("RegisterUser", mock.Anything, mock.Anything).Return()
 
 	handlers := &handler.Handlers{
-		AuthHandler: mockAuthHandler,
+		RegisterHandler: mockAuthHandler,
 	}
 
 	r := NewRouter(handlers)
