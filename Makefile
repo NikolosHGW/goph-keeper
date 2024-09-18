@@ -28,4 +28,13 @@ _golangci-lint-rm-unformatted-report: _golangci-lint-format-report
 
 .PHONY: golangci-lint-clean
 golangci-lint-clean:
-	sudo rm -rf ./golangci-lint 
+	sudo rm -rf ./golangci-lint
+
+# Запуск тестов с покрытием только для папок internal и pkg
+# Папки api и cmd исключены, так как:
+# 1. Папка api содержит только сгенерированные файлы и файлы протоколов.
+# 2. Папка cmd содержит лишь файлы запуска, которые не требуют покрытия тестами.
+.PHONY: test-cover
+test-cover:
+	go test -v -coverpkg=./internal/...,./pkg/... -coverprofile=coverage.out -covermode=count ./internal/... ./pkg/...
+	go tool cover -func=coverage.out

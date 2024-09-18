@@ -3,8 +3,8 @@ package service
 import (
 	"testing"
 
-	"github.com/NikolosHGW/goph-keeper/internal/entity"
-	"github.com/NikolosHGW/goph-keeper/internal/helper"
+	"github.com/NikolosHGW/goph-keeper/internal/server/entity"
+	"github.com/NikolosHGW/goph-keeper/internal/server/helper"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/stretchr/testify/assert"
 )

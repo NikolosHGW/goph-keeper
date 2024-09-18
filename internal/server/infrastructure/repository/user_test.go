@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/NikolosHGW/goph-keeper/internal/entity"
-	"github.com/NikolosHGW/goph-keeper/internal/helper"
+	"github.com/NikolosHGW/goph-keeper/internal/server/entity"
+	"github.com/NikolosHGW/goph-keeper/internal/server/helper"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 )

@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	pb "github.com/NikolosHGW/goph-keeper/api/registerpb"
-	"github.com/NikolosHGW/goph-keeper/internal/entity"
-	"github.com/NikolosHGW/goph-keeper/internal/helper"
+	"github.com/NikolosHGW/goph-keeper/internal/server/entity"
+	"github.com/NikolosHGW/goph-keeper/internal/server/helper"
 )
 
 type userRepo interface {

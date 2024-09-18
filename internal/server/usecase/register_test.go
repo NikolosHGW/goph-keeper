@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	pb "github.com/NikolosHGW/goph-keeper/api/registerpb"
-	"github.com/NikolosHGW/goph-keeper/internal/entity"
-	"github.com/NikolosHGW/goph-keeper/internal/helper"
+	"github.com/NikolosHGW/goph-keeper/internal/server/entity"
+	"github.com/NikolosHGW/goph-keeper/internal/server/helper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

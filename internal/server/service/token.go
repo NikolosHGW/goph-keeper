@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/NikolosHGW/goph-keeper/internal/entity"
-	"github.com/NikolosHGW/goph-keeper/internal/helper"
+	"github.com/NikolosHGW/goph-keeper/internal/server/entity"
+	"github.com/NikolosHGW/goph-keeper/internal/server/helper"
 	"github.com/NikolosHGW/goph-keeper/pkg/logger"
 	"github.com/golang-jwt/jwt/v4"
 )

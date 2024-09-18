@@ -10,12 +10,12 @@ import (
 	"syscall"
 
 	"github.com/NikolosHGW/goph-keeper/api/registerpb"
-	"github.com/NikolosHGW/goph-keeper/internal/handler"
-	"github.com/NikolosHGW/goph-keeper/internal/infrastructure/config"
-	"github.com/NikolosHGW/goph-keeper/internal/infrastructure/db"
-	"github.com/NikolosHGW/goph-keeper/internal/infrastructure/repository"
-	"github.com/NikolosHGW/goph-keeper/internal/service"
-	"github.com/NikolosHGW/goph-keeper/internal/usecase"
+	"github.com/NikolosHGW/goph-keeper/internal/server/handler"
+	"github.com/NikolosHGW/goph-keeper/internal/server/infrastructure/config"
+	"github.com/NikolosHGW/goph-keeper/internal/server/infrastructure/db"
+	"github.com/NikolosHGW/goph-keeper/internal/server/infrastructure/repository"
+	"github.com/NikolosHGW/goph-keeper/internal/server/service"
+	"github.com/NikolosHGW/goph-keeper/internal/server/usecase"
 	"github.com/NikolosHGW/goph-keeper/pkg/logger"
 	"google.golang.org/grpc"
 )
