@@ -3,57 +3,59 @@ package handler
 import (
 	"context"
 	"errors"
-	"net/http"
+	"fmt"
 
-	"github.com/NikolosHGW/goph-keeper/internal/entity"
-	"github.com/NikolosHGW/goph-keeper/internal/helper"
-	"github.com/NikolosHGW/goph-keeper/internal/request"
-	"github.com/NikolosHGW/goph-keeper/pkg/logger"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
+	pb "github.com/NikolosHGW/goph-keeper/api/registerpb"
 )
 
-const (
-	ContentType     = "Content-Type"
-	ApplicationJSON = "application/json"
-)
+const maxPasswordLength = 72
 
 type register interface {
-	Register(context.Context, *request.RegisterUser) (*entity.User, error)
+	Handle(context.Context, *pb.RegisterUserRequest) (string, error)
 }
 
-type RegisterHandler struct {
+// RegisterServer - структура gRPC сервера для регистрации пользователя.
+type RegisterServer struct {
+	pb.UnimplementedRegisterServer
+
 	registerUseCase register
-	logger          logger.CustomLogger
-	secretKey       string
 }
 
-func NewRegisterHandler(
-	registerUseCase register,
-	logger logger.CustomLogger,
-	secretKey string,
-) *RegisterHandler {
-	return &RegisterHandler{
-		registerUseCase: registerUseCase,
-		logger:          logger,
-		secretKey:       secretKey,
-	}
+// NewRegisterServer - конструктор gRPC сервера для регистрации пользователя.
+func NewRegisterServer(registerUseCase register) *RegisterServer {
+	return &RegisterServer{registerUseCase: registerUseCase}
 }
 
-func (h *RegisterHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
-	registerDTO, err := request.NewRegisterUser(r, h.logger)
+// RegisterUser - реализация RPC сервиса.
+func (s *RegisterServer) RegisterUser(
+	ctx context.Context,
+	req *pb.RegisterUserRequest,
+) (*pb.RegisterUserResponse, error) {
+	err := validateRegisterUserRequest(req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return nil, status.Errorf(codes.InvalidArgument, "неправильный запрос: %v", err)
 	}
 
-	user, err := h.registerUseCase.Register(r.Context(), registerDTO)
+	token, err := s.registerUseCase.Handle(ctx, req)
 	if err != nil {
-		if errors.Is(err, helper.ErrLoginAlreadyExists) {
-			http.Error(w, err.Error(), http.StatusConflict)
-			return
-		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, status.Errorf(codes.Internal, "ошибка при регистрации пользователя: %v", err)
 	}
 
-	sendToken(w, h.secretKey, h.logger, user)
+	return &pb.RegisterUserResponse{
+		BearerToken: token,
+	}, nil
+}
+
+func validateRegisterUserRequest(req *pb.RegisterUserRequest) error {
+	if req.Login == "" || req.Password == "" {
+		return errors.New("пустые логин и/или пароль")
+	}
+	if len([]byte(req.Password)) > maxPasswordLength {
+		return fmt.Errorf("пароль не может быть длиннее чем %d символов", maxPasswordLength)
+	}
+
+	return nil
 }

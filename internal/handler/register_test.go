@@ -1,139 +1,146 @@
 package handler
 
 import (
-	"bytes"
 	"context"
 	"errors"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 
-	"github.com/NikolosHGW/goph-keeper/internal/entity"
-	"github.com/NikolosHGW/goph-keeper/internal/helper"
-	"github.com/NikolosHGW/goph-keeper/internal/request"
+	pb "github.com/NikolosHGW/goph-keeper/api/registerpb"
+	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
-type mockLogger struct{}
-
-func (ml mockLogger) LogInfo(message string, err error) {}
-
-type mockRegisterUseCase struct {
-	RegisterFunc func(ctx context.Context, user *request.RegisterUser) (*entity.User, error)
+type registerUseCaseMock struct {
+	handleFunc func(ctx context.Context, req *pb.RegisterUserRequest) (string, error)
 }
 
-func (m *mockRegisterUseCase) Register(ctx context.Context, user *request.RegisterUser) (*entity.User, error) {
-	return m.RegisterFunc(ctx, user)
+func (m *registerUseCaseMock) Handle(ctx context.Context, req *pb.RegisterUserRequest) (string, error) {
+	return m.handleFunc(ctx, req)
 }
 
-func TestRegisterUser(t *testing.T) {
+func TestRegisterServer_RegisterUser(t *testing.T) {
+	ctx := context.Background()
+
 	tests := []struct {
-		name                 string
-		inputBody            string
-		mockRegister         func(ctx context.Context, user *request.RegisterUser) (*entity.User, error)
-		expectedStatus       int
-		expectedErrorMessage string
-		expectedHeaders      map[string]string
-		secretKey            string
+		name            string
+		req             *pb.RegisterUserRequest
+		setupMock       func() *registerUseCaseMock
+		expectedToken   string
+		expectedErrCode codes.Code
 	}{
 		{
-			name:      "Успешная регистрация",
-			inputBody: `{"login":"user1","password":"password1"}`,
-			mockRegister: func(ctx context.Context, user *request.RegisterUser) (*entity.User, error) {
-				return &entity.User{
-					ID:    1,
-					Login: user.Login,
-				}, nil
+			name: "Успешная регистрация",
+			req: &pb.RegisterUserRequest{
+				Login:    "testuser",
+				Password: "password123",
 			},
-			expectedStatus: http.StatusOK,
-			expectedHeaders: map[string]string{
-				"Authorization": "Bearer ",
-				"Content-Type":  "application/json",
+			setupMock: func() *registerUseCaseMock {
+				return &registerUseCaseMock{
+					handleFunc: func(ctx context.Context, req *pb.RegisterUserRequest) (string, error) {
+						return "testtoken", nil
+					},
+				}
 			},
-			secretKey: "testsecretkey",
+			expectedToken:   "testtoken",
+			expectedErrCode: codes.OK,
 		},
 		{
-			name:      "Пользователь уже существует",
-			inputBody: `{"login":"user1","password":"password1"}`,
-			mockRegister: func(ctx context.Context, user *request.RegisterUser) (*entity.User, error) {
-				return nil, helper.ErrLoginAlreadyExists
+			name: "Ошибка валидации - пустой логин",
+			req: &pb.RegisterUserRequest{
+				Login:    "",
+				Password: "password123",
 			},
-			expectedStatus:       http.StatusConflict,
-			expectedErrorMessage: helper.ErrLoginAlreadyExists.Error() + "\n",
-			secretKey:            "testsecretkey",
+			setupMock:       func() *registerUseCaseMock { return nil },
+			expectedErrCode: codes.InvalidArgument,
 		},
 		{
-			name:                 "Неверные данные запроса",
-			inputBody:            `{"login":"user1","password":"password1"`,
-			expectedStatus:       http.StatusBadRequest,
-			expectedErrorMessage: "внутренняя ошибка сервера\n",
-			secretKey:            "testsecretkey",
-		},
-		{
-			name:      "Внутренняя ошибка сервера при регистрации",
-			inputBody: `{"login":"user1","password":"password1"}`,
-			mockRegister: func(ctx context.Context, user *request.RegisterUser) (*entity.User, error) {
-				return nil, errors.New("database error")
+			name: "Ошибка в use case",
+			req: &pb.RegisterUserRequest{
+				Login:    "testuser",
+				Password: "password123",
 			},
-			expectedStatus:       http.StatusInternalServerError,
-			expectedErrorMessage: "database error\n",
-			secretKey:            "testsecretkey",
-		},
-		{
-			name:      "Пустой секретный ключ",
-			inputBody: `{"login":"user1","password":"password1"}`,
-			mockRegister: func(ctx context.Context, user *request.RegisterUser) (*entity.User, error) {
-				return &entity.User{
-					ID:    1,
-					Login: user.Login,
-				}, nil
+			setupMock: func() *registerUseCaseMock {
+				return &registerUseCaseMock{
+					handleFunc: func(ctx context.Context, req *pb.RegisterUserRequest) (string, error) {
+						return "", errors.New("some error")
+					},
+				}
 			},
-			expectedStatus:       http.StatusInternalServerError,
-			expectedErrorMessage: helper.ErrInternalServer.Error() + "\n",
-			secretKey:            "",
+			expectedErrCode: codes.Internal,
 		},
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodPost, "/register", bytes.NewBuffer([]byte(tc.inputBody)))
-			req.Header.Set("Content-Type", "application/json")
-			rr := httptest.NewRecorder()
-
-			mockRegisterUseCase := &mockRegisterUseCase{}
-			if tc.mockRegister != nil {
-				mockRegisterUseCase.RegisterFunc = tc.mockRegister
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var server *RegisterServer
+			if tt.setupMock != nil {
+				mockRegisterUseCase := tt.setupMock()
+				server = NewRegisterServer(mockRegisterUseCase)
+			} else {
+				server = NewRegisterServer(nil)
 			}
 
-			mockLogger := &mockLogger{}
+			resp, err := server.RegisterUser(ctx, tt.req)
 
-			handler := NewRegisterHandler(mockRegisterUseCase, mockLogger, tc.secretKey)
-
-			handler.RegisterUser(rr, req)
-
-			if rr.Code != tc.expectedStatus {
-				t.Errorf("ожидался статус %d, получили %d", tc.expectedStatus, rr.Code)
+			if tt.expectedErrCode != codes.OK {
+				assert.Nil(t, resp)
+				st, ok := status.FromError(err)
+				assert.True(t, ok)
+				assert.Equal(t, tt.expectedErrCode, st.Code())
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedToken, resp.BearerToken)
 			}
+		})
+	}
+}
 
-			if tc.expectedErrorMessage != "" {
-				respBody := rr.Body.String()
-				if respBody != tc.expectedErrorMessage {
-					t.Errorf("ожидалось сообщение об ошибке '%s', получили '%s'", tc.expectedErrorMessage, respBody)
-				}
-			}
+func TestValidateRegisterUserRequest(t *testing.T) {
+	tests := []struct {
+		name    string
+		req     *pb.RegisterUserRequest
+		wantErr bool
+	}{
+		{
+			name: "Валидный запрос",
+			req: &pb.RegisterUserRequest{
+				Login:    "testuser",
+				Password: "password123",
+			},
+			wantErr: false,
+		},
+		{
+			name: "Пустой логин",
+			req: &pb.RegisterUserRequest{
+				Login:    "",
+				Password: "password123",
+			},
+			wantErr: true,
+		},
+		{
+			name: "Пустой пароль",
+			req: &pb.RegisterUserRequest{
+				Login:    "testuser",
+				Password: "",
+			},
+			wantErr: true,
+		},
+		{
+			name: "Слишком длинный пароль",
+			req: &pb.RegisterUserRequest{
+				Login:    "testuser",
+				Password: string(make([]byte, maxPasswordLength+1)),
+			},
+			wantErr: true,
+		},
+	}
 
-			for key, expectedValue := range tc.expectedHeaders {
-				actualValue := rr.Header().Get(key)
-				if actualValue == "" {
-					t.Errorf("ожидался заголовок '%s'", key)
-				}
-				if expectedValue != "" && !containsPrefix(actualValue, expectedValue) {
-					t.Errorf(
-						"ожидалось, что заголовок '%s' начнется с '%s', получили '%s'",
-						key,
-						expectedValue,
-						actualValue,
-					)
-				}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateRegisterUserRequest(tt.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("validateRegisterUserRequest() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

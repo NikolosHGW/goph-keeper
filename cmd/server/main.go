@@ -1,26 +1,24 @@
 package main
 
 import (
-	"context"
+	"errors"
 	"fmt"
 	"log"
-	"net/http"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
+	"github.com/NikolosHGW/goph-keeper/api/registerpb"
 	"github.com/NikolosHGW/goph-keeper/internal/handler"
 	"github.com/NikolosHGW/goph-keeper/internal/infrastructure/config"
 	"github.com/NikolosHGW/goph-keeper/internal/infrastructure/db"
 	"github.com/NikolosHGW/goph-keeper/internal/infrastructure/repository"
-	"github.com/NikolosHGW/goph-keeper/internal/infrastructure/router"
 	"github.com/NikolosHGW/goph-keeper/internal/service"
 	"github.com/NikolosHGW/goph-keeper/internal/usecase"
 	"github.com/NikolosHGW/goph-keeper/pkg/logger"
+	"google.golang.org/grpc"
 )
-
-const shutdownTime = 5
 
 func main() {
 	if err := run(); err != nil {
@@ -49,26 +47,25 @@ func run() error {
 
 	userRepo := repository.NewUser(database, myLogger)
 
-	userService := service.NewUser(myLogger)
+	registerService := service.NewRegister(myLogger)
+	tokenService := service.NewToken(myLogger, config.GetSecretKey())
 
-	registerUsecase := usecase.NewRegisterUser(userService, userRepo)
+	registerUsecase := usecase.NewRegister(registerService, tokenService, userRepo)
 
-	handlers := &handler.Handlers{
-		RegisterHandler: handler.NewRegisterHandler(registerUsecase, myLogger, config.GetSecretKey()),
+	listen, err := net.Listen("tcp", config.GetRunAddress())
+	if err != nil {
+		return fmt.Errorf("не удалось прослушать TCP: %w", err)
 	}
 
-	r := router.NewRouter(handlers)
+	srv := grpc.NewServer()
 
-	srv := &http.Server{
-		Addr:    config.GetRunAddress(),
-		Handler: r,
-	}
+	registerpb.RegisterRegisterServer(srv, handler.NewRegisterServer(registerUsecase))
 
 	errChan := make(chan error, 1)
 
 	go func() {
 		myLogger.LogStringInfo("Запуск сервера", "address", config.GetRunAddress())
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := srv.Serve(listen); err != nil && !errors.Is(err, grpc.ErrServerStopped) {
 			errChan <- fmt.Errorf("ошибка при запуске сервера: %w", err)
 		}
 	}()
@@ -85,12 +82,7 @@ func run() error {
 		return fmt.Errorf("горутина с запуском сервера вернула ошибку: %w", err)
 	}
 
-	ctxShutdown, cancelShutdown := context.WithTimeout(context.Background(), shutdownTime*time.Second)
-	defer cancelShutdown()
-
-	if err := srv.Shutdown(ctxShutdown); err != nil {
-		return fmt.Errorf("ошибка при завершении работы сервера: %w", err)
-	}
+	srv.GracefulStop()
 
 	myLogger.LogStringInfo("Сервер успешно остановлен", "address", config.GetRunAddress())
 
