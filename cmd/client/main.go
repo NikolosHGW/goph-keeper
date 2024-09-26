@@ -1,15 +1,16 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
+	"os"
+	"strings"
 
-	pb "github.com/NikolosHGW/goph-keeper/api/registerpb"
+	"github.com/NikolosHGW/goph-keeper/internal/client/command"
+	"github.com/NikolosHGW/goph-keeper/internal/client/entity"
 	"github.com/NikolosHGW/goph-keeper/internal/client/infrastructure/config"
+	"github.com/NikolosHGW/goph-keeper/internal/client/service"
 	"github.com/NikolosHGW/goph-keeper/pkg/logger"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -20,22 +21,52 @@ func main() {
 		log.Fatalf("ошибка инициализации логгер: %v", err)
 	}
 
-	conn, err := grpc.NewClient(config.GetServerAddress(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	grpcClient, err := service.NewGRPCClient(config.GetServerAddress(), myLogger)
 	if err != nil {
-		myLogger.LogInfo("не удалось инициализировать клиент gRPC", err)
-		log.Fatal(err)
+		myLogger.LogInfo("Ошибка инициализации gRPC клиента", err)
+		os.Exit(1)
 	}
 	defer func() {
-		err := conn.Close()
+		err := grpcClient.Close()
 		if err != nil {
 			myLogger.LogInfo("не удалось закрыть соединение клиента gRPC", err)
 		}
 	}()
 
-	c := pb.NewRegisterClient(conn)
-	resp, err := c.RegisterUser(context.Background(), &pb.RegisterUserRequest{Login: "ololo", Password: "qq!"})
-	if err != nil {
-		log.Fatal(err)
+	tokenHolder := &entity.TokenHolder{}
+
+	authService := service.NewAuthService(grpcClient, myLogger)
+
+	commands := []command.Command{
+		command.NewRegisterCommand(authService, tokenHolder),
 	}
-	fmt.Println(resp)
+
+	commandNames := make([]string, len(commands))
+
+	commandMap := make(map[string]command.Command)
+	for i, cmd := range commands {
+		commandMap[cmd.Name()] = cmd
+		commandNames[i] = cmd.Name()
+	}
+
+	fmt.Println("Доступные команды: ", strings.Join(commandNames, ", "))
+	for {
+		fmt.Print("Введите команду: ")
+		var input string
+		_, err := fmt.Scanln(&input)
+		if err != nil {
+			myLogger.LogInfo("Ошибка ввода команды", err)
+		}
+
+		cmd, exists := commandMap[input]
+		if !exists {
+			fmt.Println("Неизвестная команда:", input)
+			continue
+		}
+
+		err = cmd.Execute()
+		if err != nil {
+			myLogger.LogInfo("Ошибка вызова команды", err)
+		}
+	}
 }
