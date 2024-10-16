@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/NikolosHGW/goph-keeper/api/authpb"
 	"github.com/NikolosHGW/goph-keeper/api/registerpb"
 	"github.com/NikolosHGW/goph-keeper/internal/server/handler"
 	"github.com/NikolosHGW/goph-keeper/internal/server/infrastructure/config"
@@ -18,6 +19,7 @@ import (
 	"github.com/NikolosHGW/goph-keeper/internal/server/usecase"
 	"github.com/NikolosHGW/goph-keeper/pkg/logger"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 func main() {
@@ -51,6 +53,7 @@ func run() error {
 	tokenService := service.NewToken(myLogger, config.GetSecretKey())
 
 	registerUsecase := usecase.NewRegister(registerService, tokenService, userRepo)
+	authUsecase := usecase.NewAuth(tokenService, userRepo)
 
 	listen, err := net.Listen("tcp", config.GetRunAddress())
 	if err != nil {
@@ -59,7 +62,10 @@ func run() error {
 
 	srv := grpc.NewServer()
 
+	reflection.Register(srv)
+
 	registerpb.RegisterRegisterServer(srv, handler.NewRegisterServer(registerUsecase))
+	authpb.RegisterAuthServer(srv, handler.NewAuthServer(authUsecase))
 
 	errChan := make(chan error, 1)
 

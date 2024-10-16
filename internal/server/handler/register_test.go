@@ -138,7 +138,7 @@ func TestValidateRegisterUserRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateRegisterUserRequest(tt.req)
+			err := validateLoginPasswordRequest(tt.req.Login, tt.req.Password)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("validateRegisterUserRequest() error = %v, wantErr %v", err, tt.wantErr)
 			}

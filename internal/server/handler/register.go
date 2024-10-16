@@ -34,7 +34,7 @@ func (s *RegisterServer) RegisterUser(
 	ctx context.Context,
 	req *pb.RegisterUserRequest,
 ) (*pb.RegisterUserResponse, error) {
-	err := validateRegisterUserRequest(req)
+	err := validateLoginPasswordRequest(req.Login, req.Password)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "неправильный запрос: %v", err)
 	}
@@ -49,11 +49,11 @@ func (s *RegisterServer) RegisterUser(
 	}, nil
 }
 
-func validateRegisterUserRequest(req *pb.RegisterUserRequest) error {
-	if req.Login == "" || req.Password == "" {
+func validateLoginPasswordRequest(login, password string) error {
+	if login == "" || password == "" {
 		return errors.New("пустые логин и/или пароль")
 	}
-	if len([]byte(req.Password)) > maxPasswordLength {
+	if len([]byte(password)) > maxPasswordLength {
 		return fmt.Errorf("пароль не может быть длиннее чем %d символов", maxPasswordLength)
 	}
 
