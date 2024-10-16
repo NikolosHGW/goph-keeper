@@ -100,7 +100,7 @@ func TestAuthServer_Login(t *testing.T) {
 
 			server := NewAuthServer(mockAuthUseCase)
 
-			resp, err := server.Login(ctx, tt.req)
+			resp, err := server.LoginUser(ctx, tt.req)
 
 			if tt.expectedErrCode != codes.OK {
 				assert.Nil(t, resp)

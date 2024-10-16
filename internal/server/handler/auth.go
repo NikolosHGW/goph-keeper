@@ -24,8 +24,8 @@ func NewAuthServer(authUseCase auth) *AuthServer {
 	return &AuthServer{authUseCase: authUseCase}
 }
 
-// Login - реализация RPC сервиса.
-func (s *AuthServer) Login(
+// LoginUser - реализация RPC сервиса.
+func (s *AuthServer) LoginUser(
 	ctx context.Context,
 	req *pb.LoginUserRequest,
 ) (*pb.LoginUserResponse, error) {

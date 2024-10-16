@@ -39,6 +39,7 @@ func main() {
 
 	commands := []command.Command{
 		command.NewRegisterCommand(authService, tokenHolder, os.Stdin, os.Stdout),
+		command.NewLoginCommand(authService, tokenHolder, os.Stdin, os.Stdout),
 	}
 
 	commandNames := make([]string, len(commands))

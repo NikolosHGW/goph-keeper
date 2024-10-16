@@ -18,6 +18,7 @@ type authService struct {
 func NewAuthService(grpcClient *GRPCClient, logger logger.CustomLogger) *authService {
 	return &authService{
 		registerClient: grpcClient.RegisterClient,
+		authClient:     grpcClient.AuthClient,
 		logger:         logger,
 	}
 }
