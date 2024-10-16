@@ -3,7 +3,8 @@ package service
 import (
 	"fmt"
 
-	pb "github.com/NikolosHGW/goph-keeper/api/registerpb"
+	"github.com/NikolosHGW/goph-keeper/api/authpb"
+	"github.com/NikolosHGW/goph-keeper/api/registerpb"
 	"github.com/NikolosHGW/goph-keeper/pkg/logger"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -11,7 +12,8 @@ import (
 
 type GRPCClient struct {
 	conn           *grpc.ClientConn
-	RegisterClient pb.RegisterClient
+	RegisterClient registerpb.RegisterClient
+	AuthClient     authpb.AuthClient
 }
 
 func NewGRPCClient(serverAddress string, logger logger.CustomLogger) (*GRPCClient, error) {
@@ -22,11 +24,13 @@ func NewGRPCClient(serverAddress string, logger logger.CustomLogger) (*GRPCClien
 		return nil, fmt.Errorf("ошибка при инициализации gRPC клиента: %w", err)
 	}
 
-	registerClient := pb.NewRegisterClient(conn)
+	registerClient := registerpb.NewRegisterClient(conn)
+	authClient := authpb.NewAuthClient(conn)
 
 	return &GRPCClient{
 		conn:           conn,
 		RegisterClient: registerClient,
+		AuthClient:     authClient,
 	}, nil
 }
 

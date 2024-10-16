@@ -4,25 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/NikolosHGW/goph-keeper/api/authpb"
 	"github.com/NikolosHGW/goph-keeper/api/registerpb"
 	"github.com/NikolosHGW/goph-keeper/pkg/logger"
-	"google.golang.org/grpc"
 )
 
-type AuthService interface {
-	Register(ctx context.Context, login, password string) (string, error)
-}
-
-type registerClient interface {
-	RegisterUser(
-		ctx context.Context,
-		in *registerpb.RegisterUserRequest,
-		opts ...grpc.CallOption,
-	) (*registerpb.RegisterUserResponse, error)
-}
-
 type authService struct {
-	registerClient registerClient
+	registerClient registerpb.RegisterClient
+	authClient     authpb.AuthClient
 	logger         logger.CustomLogger
 }
 
@@ -44,4 +33,16 @@ func (s *authService) Register(ctx context.Context, login, password string) (str
 		return "", fmt.Errorf("ошибка при регистрации: %w", err)
 	}
 	return resp.BearerToken, nil
+}
+
+func (s *authService) Login(ctx context.Context, login, password string) (string, error) {
+	req := &authpb.LoginUserRequest{
+		Login:    login,
+		Password: password,
+	}
+	res, err := s.authClient.LoginUser(ctx, req)
+	if err != nil {
+		return "", fmt.Errorf("ошибка при логине: %w", err)
+	}
+	return res.BearerToken, nil
 }

@@ -9,24 +9,24 @@ import (
 	"github.com/NikolosHGW/goph-keeper/internal/client/entity"
 )
 
-type authService interface {
-	Register(ctx context.Context, login, password string) (string, error)
+type service interface {
+	Login(ctx context.Context, login, password string) (string, error)
 }
 
-type RegisterCommand struct {
-	authService authService
+type LoginCommand struct {
+	authService service
 	tokenHolder *entity.TokenHolder
 	reader      io.Reader
 	writer      io.Writer
 }
 
-func NewRegisterCommand(
-	authService authService,
+func NewLoginCommand(
+	authService service,
 	tokenHolder *entity.TokenHolder,
 	reader io.Reader,
 	writer io.Writer,
-) *RegisterCommand {
-	return &RegisterCommand{
+) *LoginCommand {
+	return &LoginCommand{
 		authService: authService,
 		tokenHolder: tokenHolder,
 		reader:      reader,
@@ -34,11 +34,11 @@ func NewRegisterCommand(
 	}
 }
 
-func (c *RegisterCommand) Name() string {
-	return "register"
+func (c *LoginCommand) Name() string {
+	return "login"
 }
 
-func (c *RegisterCommand) Execute() error {
+func (c *LoginCommand) Execute() error {
 	var login, password string
 	_, err := fmt.Fprint(c.writer, "Введите login: ")
 	if err != nil {
@@ -61,15 +61,12 @@ func (c *RegisterCommand) Execute() error {
 		return fmt.Errorf("ошибка ввода пароля: %w", scanner.Err())
 	}
 
-	token, err := c.authService.Register(context.Background(), login, password)
+	token, err := c.authService.Login(context.Background(), login, password)
 	if err != nil {
-		return fmt.Errorf("ошибка регистрации: %w", err)
+		return fmt.Errorf("ошибка входа: %w", err)
 	}
 
 	c.tokenHolder.Token = token
-	_, err = fmt.Fprintln(c.writer, "Регистрация прошла успешно.")
-	if err != nil {
-		return fmt.Errorf("ошибка Fprintln : %w", err)
-	}
+	fmt.Println("Вход выполнен успешно.")
 	return nil
 }
