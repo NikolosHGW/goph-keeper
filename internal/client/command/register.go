@@ -1,8 +1,10 @@
 package command
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/NikolosHGW/goph-keeper/internal/client/entity"
 	"github.com/NikolosHGW/goph-keeper/internal/client/service"
@@ -11,10 +13,22 @@ import (
 type RegisterCommand struct {
 	authService service.AuthService
 	tokenHolder *entity.TokenHolder
+	reader      io.Reader
+	writer      io.Writer
 }
 
-func NewRegisterCommand(authService service.AuthService, tokenHolder *entity.TokenHolder) *RegisterCommand {
-	return &RegisterCommand{authService: authService, tokenHolder: tokenHolder}
+func NewRegisterCommand(
+	authService service.AuthService,
+	tokenHolder *entity.TokenHolder,
+	reader io.Reader,
+	writer io.Writer,
+) *RegisterCommand {
+	return &RegisterCommand{
+		authService: authService,
+		tokenHolder: tokenHolder,
+		reader:      reader,
+		writer:      writer,
+	}
 }
 
 func (c *RegisterCommand) Name() string {
@@ -23,23 +37,36 @@ func (c *RegisterCommand) Name() string {
 
 func (c *RegisterCommand) Execute() error {
 	var login, password string
-	fmt.Print("Введите login: ")
-	_, err := fmt.Scanln(&login)
+	_, err := fmt.Fprint(c.writer, "Введите login: ")
 	if err != nil {
-		return fmt.Errorf("ошибка ввода логина: %w", err)
+		return fmt.Errorf("ошибка stdin login: %w", err)
 	}
-	fmt.Print("Введите password: ")
-	_, err = fmt.Scanln(&password)
+	scanner := bufio.NewScanner(c.reader)
+	if scanner.Scan() {
+		login = scanner.Text()
+	} else {
+		return fmt.Errorf("ошибка ввода логина: %w", scanner.Err())
+	}
+
+	_, err = fmt.Fprint(c.writer, "Введите password: ")
 	if err != nil {
-		return fmt.Errorf("ошибка ввода пароля: %w", err)
+		return fmt.Errorf("ошибка stdin password: %w", err)
+	}
+	if scanner.Scan() {
+		password = scanner.Text()
+	} else {
+		return fmt.Errorf("ошибка ввода пароля: %w", scanner.Err())
 	}
 
 	token, err := c.authService.Register(context.Background(), login, password)
 	if err != nil {
-		return fmt.Errorf("ошибка решистрации: %w", err)
+		return fmt.Errorf("ошибка регистрации: %w", err)
 	}
 
 	c.tokenHolder.Token = token
-	fmt.Println("Регистрация прошла успешно.")
+	_, err = fmt.Fprintln(c.writer, "Регистрация прошла успешно.")
+	if err != nil {
+		return fmt.Errorf("ошибка Fprintln : %w", err)
+	}
 	return nil
 }

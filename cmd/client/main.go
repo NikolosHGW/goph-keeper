@@ -38,7 +38,7 @@ func main() {
 	authService := service.NewAuthService(grpcClient, myLogger)
 
 	commands := []command.Command{
-		command.NewRegisterCommand(authService, tokenHolder),
+		command.NewRegisterCommand(authService, tokenHolder, os.Stdin, os.Stdout),
 	}
 
 	commandNames := make([]string, len(commands))

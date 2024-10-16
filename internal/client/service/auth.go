@@ -6,14 +6,23 @@ import (
 
 	"github.com/NikolosHGW/goph-keeper/api/registerpb"
 	"github.com/NikolosHGW/goph-keeper/pkg/logger"
+	"google.golang.org/grpc"
 )
 
 type AuthService interface {
 	Register(ctx context.Context, login, password string) (string, error)
 }
 
+type registerClient interface {
+	RegisterUser(
+		ctx context.Context,
+		in *registerpb.RegisterUserRequest,
+		opts ...grpc.CallOption,
+	) (*registerpb.RegisterUserResponse, error)
+}
+
 type authService struct {
-	registerClient registerpb.RegisterClient
+	registerClient registerClient
 	logger         logger.CustomLogger
 }
 
