@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -42,4 +43,24 @@ func (t *token) GenerateJWT(user *entity.User) (string, error) {
 	}
 
 	return tokenString, nil
+}
+
+// ValidateToken валидирует токен.
+func (s *token) ValidateToken(tokenString string) (int, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &entity.Claims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(s.secretKey), nil
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	if claims, ok := token.Claims.(*entity.Claims); ok && token.Valid {
+		if claims.UserID == 0 {
+			s.log.LogInfo("UserID отсутствует в клеймах токена", errors.New("invalid token: missing UserID"))
+			return 0, errors.New("недействительный токен")
+		}
+		return claims.UserID, nil
+	}
+
+	return 0, errors.New("недействительный токен")
 }

@@ -33,7 +33,7 @@ func (c *config) parseFlags() {
 			"sslmode=disable",
 		"data source name for connection")
 	flag.StringVar(&c.SecretKey, "k", "abc", "secret key for hash")
-	flag.StringVar(&c.CryptoKey, "crypto-key", "", "path to private crypto key")
+	flag.StringVar(&c.CryptoKey, "crypto-key", "01234567890123456789012345678901", "crypto key")
 	flag.Parse()
 }
 
@@ -64,7 +64,7 @@ func (c config) GetSecretKey() string {
 	return c.SecretKey
 }
 
-// GetCryptoKeyPath геттер для пути к приватному ключу шифрования.
+// GetCryptoKeyPath геттер для ключа шифрования.
 func (c config) GetCryptoKeyPath() string {
 	return c.CryptoKey
 }

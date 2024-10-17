@@ -10,11 +10,13 @@ import (
 	"syscall"
 
 	"github.com/NikolosHGW/goph-keeper/api/authpb"
+	"github.com/NikolosHGW/goph-keeper/api/datapb"
 	"github.com/NikolosHGW/goph-keeper/api/registerpb"
 	"github.com/NikolosHGW/goph-keeper/internal/server/handler"
 	"github.com/NikolosHGW/goph-keeper/internal/server/infrastructure/config"
 	"github.com/NikolosHGW/goph-keeper/internal/server/infrastructure/db"
 	"github.com/NikolosHGW/goph-keeper/internal/server/infrastructure/repository"
+	"github.com/NikolosHGW/goph-keeper/internal/server/interceptor"
 	"github.com/NikolosHGW/goph-keeper/internal/server/service"
 	"github.com/NikolosHGW/goph-keeper/internal/server/usecase"
 	"github.com/NikolosHGW/goph-keeper/pkg/logger"
@@ -48,9 +50,12 @@ func run() error {
 	}()
 
 	userRepo := repository.NewUser(database, myLogger)
+	dataRepo := repository.NewDataRepository(database, myLogger)
 
 	registerService := service.NewRegister(myLogger)
 	tokenService := service.NewToken(myLogger, config.GetSecretKey())
+	encryptionService := service.NewEncryptionService([]byte(config.GetCryptoKeyPath()))
+	dataService := service.NewDataService(dataRepo, encryptionService)
 
 	registerUsecase := usecase.NewRegister(registerService, tokenService, userRepo)
 	authUsecase := usecase.NewAuth(tokenService, userRepo)
@@ -60,12 +65,22 @@ func run() error {
 		return fmt.Errorf("не удалось прослушать TCP: %w", err)
 	}
 
-	srv := grpc.NewServer()
+	noAuthMethods := []string{
+		"/register.Register/RegisterUser",
+		"/auth.Auth/LoginUser",
+	}
+
+	srv := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(
+			interceptor.NewAuthInterceptor(tokenService, noAuthMethods).Unary(),
+		),
+	)
 
 	reflection.Register(srv)
 
 	registerpb.RegisterRegisterServer(srv, handler.NewRegisterServer(registerUsecase))
 	authpb.RegisterAuthServer(srv, handler.NewAuthServer(authUsecase))
+	datapb.RegisterDataServiceServer(srv, handler.NewDataServer(dataService, myLogger))
 
 	errChan := make(chan error, 1)
 
