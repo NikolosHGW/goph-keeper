@@ -4,15 +4,12 @@ import (
 	"context"
 	"strings"
 
+	"github.com/NikolosHGW/goph-keeper/internal/contextkey"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
-
-type userIDKey string
-
-const IDKey userIDKey = "userID"
 
 type tokenValidator interface {
 	ValidateToken(tokenString string) (int, error)
@@ -51,7 +48,7 @@ func (ai *AuthInterceptor) Unary() grpc.UnaryServerInterceptor {
 			return nil, err
 		}
 
-		ctx = context.WithValue(ctx, IDKey, userID)
+		ctx = context.WithValue(ctx, contextkey.UserIDKey, userID)
 
 		return handler(ctx, req)
 	}

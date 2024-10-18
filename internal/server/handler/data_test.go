@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/NikolosHGW/goph-keeper/api/datapb"
+	"github.com/NikolosHGW/goph-keeper/internal/contextkey"
 	"github.com/NikolosHGW/goph-keeper/internal/server/entity"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -41,7 +42,7 @@ func (m *mockDataService) DeleteData(ctx context.Context, userID, dataID int) er
 }
 
 func contextWithUserID(userID int) context.Context {
-	return context.WithValue(context.Background(), userIDKey, userID)
+	return context.WithValue(context.Background(), contextkey.UserIDKey, userID)
 }
 
 func TestAddData(t *testing.T) {

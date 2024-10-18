@@ -5,16 +5,13 @@ import (
 	"errors"
 
 	"github.com/NikolosHGW/goph-keeper/api/datapb"
+	"github.com/NikolosHGW/goph-keeper/internal/contextkey"
 	"github.com/NikolosHGW/goph-keeper/internal/server/entity"
 	"github.com/NikolosHGW/goph-keeper/pkg/logger"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
-
-type contextKey string
-
-const userIDKey contextKey = "userID"
 
 type dataService interface {
 	AddData(ctx context.Context, userID int, data *entity.UserData) (int, error)
@@ -120,7 +117,7 @@ func (h *DataServer) DeleteData(ctx context.Context, req *datapb.DeleteDataReque
 }
 
 func getUserIDFromContext(ctx context.Context) (int, error) {
-	userIDValue := ctx.Value(userIDKey)
+	userIDValue := ctx.Value(contextkey.UserIDKey)
 	if userIDValue == nil {
 		return 0, errors.New("userID не найден в контексте")
 	}

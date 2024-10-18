@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/NikolosHGW/goph-keeper/internal/contextkey"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc"
@@ -61,7 +62,7 @@ func TestAuthInterceptor_Unary(t *testing.T) {
 			expectedResult: 123,
 			expectedError:  nil,
 			handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-				userID, ok := ctx.Value(IDKey).(int)
+				userID, ok := ctx.Value(contextkey.UserIDKey).(int)
 				if !ok {
 					return nil, errors.New("userID не найден в контексте")
 				}

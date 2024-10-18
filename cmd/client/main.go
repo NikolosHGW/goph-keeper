@@ -36,10 +36,15 @@ func main() {
 	tokenHolder := &entity.TokenHolder{}
 
 	authService := service.NewAuthService(grpcClient, myLogger)
+	dataService := service.NewDataService(grpcClient, myLogger)
 
 	commands := []command.Command{
 		command.NewRegisterCommand(authService, tokenHolder, os.Stdin, os.Stdout),
 		command.NewLoginCommand(authService, tokenHolder, os.Stdin, os.Stdout),
+		command.NewAddCommand(dataService, tokenHolder, os.Stdin, os.Stdout),
+		command.NewGetCommand(dataService, tokenHolder, os.Stdin, os.Stdout),
+		command.NewUpdateCommand(dataService, tokenHolder, os.Stdin, os.Stdout),
+		command.NewDeleteCommand(dataService, tokenHolder, os.Stdin, os.Stdout),
 	}
 
 	commandNames := make([]string, len(commands))
