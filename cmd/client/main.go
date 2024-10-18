@@ -21,7 +21,7 @@ func main() {
 		log.Fatalf("ошибка инициализации логгер: %v", err)
 	}
 
-	grpcClient, err := service.NewGRPCClient(config.GetServerAddress(), myLogger)
+	grpcClient, err := service.NewGRPCClient(config.GetServerAddress(), myLogger, config.GetRootCertPath())
 	if err != nil {
 		myLogger.LogInfo("Ошибка инициализации gRPC клиента", err)
 		os.Exit(1)

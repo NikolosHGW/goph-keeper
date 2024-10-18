@@ -10,6 +10,7 @@ import (
 
 type config struct {
 	ServerAddress string `env:"RUN_ADDRESS"`
+	RootCertPath  string `env:"ROOT_CERT_PATH"`
 }
 
 func (c *config) initEnv() error {
@@ -23,6 +24,7 @@ func (c *config) initEnv() error {
 
 func (c *config) parseFlags() {
 	flag.StringVar(&c.ServerAddress, "a", "localhost:8080", "net address host:port")
+	flag.StringVar(&c.RootCertPath, "ca", "./ca.pem", "root cert path")
 	flag.Parse()
 }
 
@@ -41,4 +43,9 @@ func NewConfig() *config {
 // GetServerAddress геттер для хоста.
 func (c config) GetServerAddress() string {
 	return c.ServerAddress
+}
+
+// GetRootCertPath геттер для пути к корневому сертификату.
+func (c config) GetRootCertPath() string {
+	return c.RootCertPath
 }

@@ -21,6 +21,7 @@ import (
 	"github.com/NikolosHGW/goph-keeper/internal/server/usecase"
 	"github.com/NikolosHGW/goph-keeper/pkg/logger"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
 )
 
@@ -70,7 +71,13 @@ func run() error {
 		"/auth.Auth/LoginUser",
 	}
 
+	creds, err := credentials.NewServerTLSFromFile(config.GetServerCrtPath(), config.GetServerKeyPath())
+	if err != nil {
+		return fmt.Errorf("не удалось загрузить TLS сертификаты: %w", err)
+	}
+
 	srv := grpc.NewServer(
+		grpc.Creds(creds),
 		grpc.ChainUnaryInterceptor(
 			interceptor.NewAuthInterceptor(tokenService, noAuthMethods).Unary(),
 		),

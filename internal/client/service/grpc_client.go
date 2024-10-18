@@ -8,7 +8,7 @@ import (
 	"github.com/NikolosHGW/goph-keeper/api/registerpb"
 	"github.com/NikolosHGW/goph-keeper/pkg/logger"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
 )
 
 type GRPCClient struct {
@@ -18,8 +18,14 @@ type GRPCClient struct {
 	DataClient     datapb.DataServiceClient
 }
 
-func NewGRPCClient(serverAddress string, logger logger.CustomLogger) (*GRPCClient, error) {
-	conn, err := grpc.NewClient(serverAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func NewGRPCClient(serverAddress string, logger logger.CustomLogger, rootCertPath string) (*GRPCClient, error) {
+	creds, err := credentials.NewClientTLSFromFile(rootCertPath, "")
+	if err != nil {
+		logger.LogInfo("не удалось загрузить корневой CA сертификат", err)
+		return nil, fmt.Errorf("ошибка при загрузке CA сертификата: %w", err)
+	}
+
+	conn, err := grpc.NewClient(serverAddress, grpc.WithTransportCredentials(creds))
 	if err != nil {
 		logger.LogInfo("не удалось инициализировать клиент gRPC", err)
 
